@@ -1,7 +1,7 @@
+import "./load-env";
 import { readFileSync } from "fs";
 import { join } from "path";
 import { eq } from "drizzle-orm";
-import "dotenv/config";
 import { db } from "../src/db";
 import {
   assignments,

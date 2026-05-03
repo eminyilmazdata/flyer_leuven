@@ -2,11 +2,12 @@
  * Quick check that DATABASE_URL works (same as Vercel / .env.local).
  * Usage: npm run db:ping
  */
+import "./load-env";
 import { neon } from "@neondatabase/serverless";
-import "dotenv/config";
+import { normalizeDatabaseUrl } from "./env-url";
 
 async function main() {
-  const url = process.env.DATABASE_URL?.trim();
+  const url = normalizeDatabaseUrl(process.env.DATABASE_URL);
   if (!url) {
     console.error("DATABASE_URL is missing. Add it to .env.local in the project root.");
     process.exit(1);

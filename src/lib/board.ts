@@ -47,9 +47,20 @@ function dbFailureHint(e: unknown): string {
   return "";
 }
 
+function sanitizeDriverMessage(msg: string): string {
+  return msg
+    .replace(/postgresql:\/\/[^\s"'`]+/gi, "postgresql://…")
+    .replace(/npg_[A-Za-z0-9]+/g, "…")
+    .slice(0, 320);
+}
+
 function formatDbError(prefix: string, e: unknown): string {
   const hint = dbFailureHint(e);
-  return hint ? `${prefix}${hint} Still stuck? ${DB_HINT}` : `${prefix} ${DB_HINT}`;
+  const raw = e instanceof Error ? e.message : String(e);
+  const detail = hint ? "" : ` Details: ${sanitizeDriverMessage(raw)}`;
+  return hint
+    ? `${prefix}${hint} Still stuck? ${DB_HINT}`
+    : `${prefix}${detail} ${DB_HINT}`;
 }
 
 export async function loadBoardRows(): Promise<BoardLoadResult> {
