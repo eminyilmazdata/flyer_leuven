@@ -34,6 +34,8 @@ yarn-error.log*
 .env
 .env.local
 .env.*.local
+# Wrong name (no leading dot) — never commit secrets
+env.local
 !.env.example
 
 # vercel
