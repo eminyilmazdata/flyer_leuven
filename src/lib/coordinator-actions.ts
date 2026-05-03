@@ -16,6 +16,12 @@ import {
   verifyCoordinatorToken,
 } from "./coordinator-token";
 import { getDefaultCampaign } from "./campaign";
+import {
+  normalizeUsername,
+  validatePassword,
+  validateUsername,
+} from "./auth";
+import { hashPassword } from "./password";
 
 async function assertCoordinator() {
   const jar = await cookies();
@@ -64,6 +70,83 @@ export async function coordinatorClearStreet(streetId: string) {
   revalidatePath("/");
   revalidatePath("/me");
   revalidatePath("/coordinator");
+}
+
+export async function coordinatorCreateVolunteer(formData: FormData) {
+  await assertCoordinator();
+  const usernameRaw = String(formData.get("volunteer_username") ?? "");
+  const pass = String(formData.get("volunteer_password") ?? "");
+  const pass2 = String(formData.get("volunteer_password_confirm") ?? "");
+
+  const uErr = validateUsername(usernameRaw);
+  if (uErr) {
+    redirect(`/coordinator?error=${encodeURIComponent(`user:${uErr}`)}`);
+  }
+  const pErr = validatePassword(pass);
+  if (pErr) {
+    redirect(`/coordinator?error=${encodeURIComponent(`pass:${pErr}`)}`);
+  }
+  if (pass !== pass2) {
+    redirect("/coordinator?error=volunteer_password_mismatch");
+  }
+
+  const username = normalizeUsername(usernameRaw);
+  const passwordHash = await hashPassword(pass);
+
+  let inserted: { id: string }[];
+  try {
+    inserted = await db
+      .insert(users)
+      .values({ username, passwordHash })
+      .onConflictDoNothing({ target: users.username })
+      .returning({ id: users.id });
+  } catch {
+    redirect("/coordinator?error=volunteer_unknown");
+  }
+
+  if (!inserted[0]?.id) {
+    redirect("/coordinator?error=volunteer_taken");
+  }
+
+  revalidatePath("/");
+  revalidatePath("/coordinator");
+  redirect("/coordinator?volunteer_created=1");
+}
+
+export async function coordinatorSetVolunteerPassword(formData: FormData) {
+  await assertCoordinator();
+  const userId = String(formData.get("user_id") ?? "").trim();
+  if (!/^[0-9a-f-]{36}$/i.test(userId)) {
+    redirect("/coordinator?error=volunteer_bad_id");
+  }
+
+  const pass = String(formData.get("new_password") ?? "");
+  const pass2 = String(formData.get("new_password_confirm") ?? "");
+
+  const pErr = validatePassword(pass);
+  if (pErr) {
+    redirect(`/coordinator?error=${encodeURIComponent(`reset:${pErr}`)}`);
+  }
+  if (pass !== pass2) {
+    redirect("/coordinator?error=volunteer_password_mismatch");
+  }
+
+  const passwordHash = await hashPassword(pass);
+  const updated = await db
+    .update(users)
+    .set({ passwordHash })
+    .where(eq(users.id, userId))
+    .returning({ id: users.id });
+
+  if (!updated.length) {
+    redirect("/coordinator?error=volunteer_not_found");
+  }
+
+  await db.delete(sessions).where(eq(sessions.userId, userId));
+  revalidatePath("/");
+  revalidatePath("/me");
+  revalidatePath("/coordinator");
+  redirect("/coordinator?volunteer_password_reset=1");
 }
 
 export async function coordinatorDeleteUser(userId: string) {

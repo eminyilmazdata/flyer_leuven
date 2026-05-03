@@ -27,6 +27,8 @@ export const campaigns = pgTable("campaigns", {
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
   username: varchar("username", { length: 64 }).notNull().unique(),
+  /** scrypt-encoded hash (`s1:saltHex:keyHex`); null until coordinator sets password */
+  passwordHash: text("password_hash"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),

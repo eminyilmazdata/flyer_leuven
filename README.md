@@ -5,9 +5,9 @@ Volunteer web app for **reserving and completing** flyering on whole streets in 
 ## Features
 
 - Public board of streets with status: open, reserved, completed.
-- **Register / log in** with a username only (no password).
+- **Volunteer log in** with username + password. Accounts are **created only by the coordinator** (no public self-registration); `/register` redirects to the login page with a short explanation.
 - **Reserve** an open street, **release** it, or **mark done** when finished.
-- **Coordinator** area (password-protected): clear any street, delete volunteers and their assignments, add/delete streets, **CSV export**.
+- **Coordinator** area (password-protected): **create volunteer accounts** (username + password), **set or change** a volunteer’s password (signs them out), clear streets, delete users, add/delete streets, **CSV export**.
 - **Cron** (optional): auto-releases reservations older than `STALE_RESERVATION_HOURS` (default 48).
 
 ## Setup
@@ -35,6 +35,8 @@ Volunteer web app for **reserving and completing** flyering on whole streets in 
    ```
 
    Seed creates the default campaign (`leuven-center`) and streets from `data/streets-seed.json`. Re-running seed does nothing if the campaign already exists.
+
+   After adding migration `0001` (password hashes), **existing** users in the database have `password_hash` null until the coordinator uses **Set password** on each account (or deletes and recreates them).
 
 5. **Develop**:
 
@@ -67,9 +69,10 @@ Volunteer web app for **reserving and completing** flyering on whole streets in 
 
 ## Manual checks
 
+- Coordinator creates a volunteer, then log out coordinator and log in as that volunteer on `/login`.
 - Two browsers: try to reserve the same open street; one should get a conflict message.
 - Complete a reserved street; status should become done.
-- Coordinator: clear street, delete user, add street, CSV download.
+- Coordinator: change volunteer password, clear street, delete user, add street, CSV download.
 
 ## Troubleshooting (Vercel)
 

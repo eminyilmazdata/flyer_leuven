@@ -9,51 +9,32 @@ import {
   destroyCurrentSession,
   normalizeUsername,
   setSessionCookie,
+  validatePassword,
   validateUsername,
 } from "./auth";
-
-export async function register(formData: FormData) {
-  const usernameRaw = String(formData.get("username") ?? "");
-  const err = validateUsername(usernameRaw);
-  if (err) redirect(`/register?error=${encodeURIComponent(err)}`);
-  const username = normalizeUsername(usernameRaw);
-
-  // Single atomic check: INSERT … ON CONFLICT DO NOTHING (avoids race + stale SELECT).
-  let inserted: { id: string }[];
-  try {
-    inserted = await db
-      .insert(users)
-      .values({ username })
-      .onConflictDoNothing({ target: users.username })
-      .returning({ id: users.id });
-  } catch {
-    redirect("/register?error=unknown");
-  }
-
-  const id = inserted[0]?.id;
-  if (!id) {
-    redirect("/register?error=taken");
-  }
-
-  const { raw } = await createSessionForUser(id);
-  await setSessionCookie(raw);
-  redirect("/");
-}
+import { verifyPassword } from "./password";
 
 export async function login(formData: FormData) {
   const usernameRaw = String(formData.get("username") ?? "");
-  const err = validateUsername(usernameRaw);
-  if (err) redirect(`/login?error=${encodeURIComponent(err)}`);
+  const password = String(formData.get("password") ?? "");
+  const uErr = validateUsername(usernameRaw);
+  if (uErr) redirect(`/login?error=${encodeURIComponent(uErr)}`);
+  const pErr = validatePassword(password);
+  if (pErr) redirect(`/login?error=${encodeURIComponent(pErr)}`);
+
   const username = normalizeUsername(usernameRaw);
 
   const row = await db
-    .select({ id: users.id })
+    .select({
+      id: users.id,
+      passwordHash: users.passwordHash,
+    })
     .from(users)
     .where(eq(users.username, username))
     .limit(1);
   const user = row[0];
-  if (!user) {
-    redirect("/login?error=notfound");
+  if (!user || !(await verifyPassword(password, user.passwordHash))) {
+    redirect("/login?error=auth");
   }
 
   const { raw } = await createSessionForUser(user.id);

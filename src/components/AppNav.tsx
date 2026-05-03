@@ -49,20 +49,12 @@ export async function AppNav() {
               </form>
             </>
           ) : (
-            <>
-              <Link
-                href="/login"
-                className="text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
-              >
-                Log in
-              </Link>
-              <Link
-                href="/register"
-                className="rounded-md bg-amber-600 px-3 py-1.5 font-medium text-white hover:bg-amber-700"
-              >
-                Register
-              </Link>
-            </>
+            <Link
+              href="/login"
+              className="rounded-md bg-amber-600 px-3 py-1.5 font-medium text-white hover:bg-amber-700"
+            >
+              Log in
+            </Link>
           )}
           {coordOk ? (
             <Link
