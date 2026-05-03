@@ -19,7 +19,7 @@ export default async function HomePage({
 }) {
   const sp = await searchParams;
   const active = parseFilter(sp.filter);
-  const { campaignName, rows } = await loadBoardRows();
+  const { campaignName, rows, dbError } = await loadBoardRows();
   const filtered =
     active === "all" ? rows : rows.filter((r) => r.status === active);
   const errMsg = sp.error ? ERROR_MAP[sp.error] ?? sp.error : null;
@@ -30,7 +30,15 @@ export default async function HomePage({
         <h1 className="text-2xl font-semibold tracking-tight">
           City center streets
         </h1>
-        {campaignName ? (
+        {dbError ? (
+          <div
+            role="alert"
+            className="mt-2 rounded-md border border-red-300 bg-red-50 px-3 py-3 text-sm text-red-950 dark:border-red-900 dark:bg-red-950/50 dark:text-red-50"
+          >
+            <p className="font-medium">Database connection failed</p>
+            <p className="mt-2 whitespace-pre-wrap">{dbError}</p>
+          </div>
+        ) : campaignName ? (
           <p className="mt-1 text-zinc-600 dark:text-zinc-400">
             Campaign: {campaignName}
           </p>

@@ -48,24 +48,29 @@ export async function getSessionUser(): Promise<{
   const raw = jar.get(SESSION_COOKIE)?.value;
   if (!raw) return null;
   const tokenHash = hashSessionToken(raw);
-  const row = await db
-    .select({
-      userId: sessions.userId,
-      expiresAt: sessions.expiresAt,
-    })
-    .from(sessions)
-    .where(eq(sessions.tokenHash, tokenHash))
-    .limit(1);
-  const s = row[0];
-  if (!s || s.expiresAt.getTime() < Date.now()) return null;
-  const u = await db
-    .select({ id: users.id, username: users.username })
-    .from(users)
-    .where(eq(users.id, s.userId))
-    .limit(1);
-  const user = u[0];
-  if (!user) return null;
-  return { userId: user.id, username: user.username };
+  try {
+    const row = await db
+      .select({
+        userId: sessions.userId,
+        expiresAt: sessions.expiresAt,
+      })
+      .from(sessions)
+      .where(eq(sessions.tokenHash, tokenHash))
+      .limit(1);
+    const s = row[0];
+    if (!s || s.expiresAt.getTime() < Date.now()) return null;
+    const u = await db
+      .select({ id: users.id, username: users.username })
+      .from(users)
+      .where(eq(users.id, s.userId))
+      .limit(1);
+    const user = u[0];
+    if (!user) return null;
+    return { userId: user.id, username: user.username };
+  } catch (e) {
+    console.error("[getSessionUser]", e);
+    return null;
+  }
 }
 
 export async function destroyCurrentSession() {

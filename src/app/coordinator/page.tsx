@@ -19,16 +19,47 @@ export default async function CoordinatorDashboardPage({
   const sp = await searchParams;
   const err = sp.error;
 
-  const userRows = await db
-    .select({
-      id: users.id,
-      username: users.username,
-      createdAt: users.createdAt,
-    })
-    .from(users)
-    .orderBy(asc(users.username));
+  const board = await loadBoardRows();
+  if (board.dbError) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Coordinator dashboard
+        </h1>
+        <div
+          role="alert"
+          className="rounded-md border border-red-300 bg-red-50 px-3 py-3 text-sm text-red-950 dark:border-red-900 dark:bg-red-950/50 dark:text-red-50"
+        >
+          <p className="font-medium">Database error</p>
+          <p className="mt-2 whitespace-pre-wrap">{board.dbError}</p>
+        </div>
+        <form action={coordinatorLogout}>
+          <button
+            type="submit"
+            className="rounded-md border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-800"
+          >
+            Log out coordinator
+          </button>
+        </form>
+      </div>
+    );
+  }
 
-  const { rows: streetRows, campaignName } = await loadBoardRows();
+  const { rows: streetRows, campaignName } = board;
+
+  let userRows: { id: string; username: string; createdAt: Date }[] = [];
+  try {
+    userRows = await db
+      .select({
+        id: users.id,
+        username: users.username,
+        createdAt: users.createdAt,
+      })
+      .from(users)
+      .orderBy(asc(users.username));
+  } catch (e) {
+    console.error("[coordinator/users]", e);
+  }
 
   return (
     <div className="space-y-10">

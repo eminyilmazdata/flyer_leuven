@@ -10,7 +10,7 @@ export default async function MePage() {
     redirect("/login?next=/me");
   }
 
-  const rows = await loadUserStreetRows(session.userId);
+  const { rows, dbError } = await loadUserStreetRows(session.userId);
   const reserved = rows.filter((r) => r.status === "reserved");
   const done = rows.filter((r) => r.status === "completed");
 
@@ -21,6 +21,14 @@ export default async function MePage() {
         <p className="mt-1 text-zinc-600 dark:text-zinc-400">
           Logged in as <strong>{session.username}</strong>
         </p>
+        {dbError ? (
+          <div
+            role="alert"
+            className="mt-3 rounded-md border border-red-300 bg-red-50 px-3 py-3 text-sm text-red-950 dark:border-red-900 dark:bg-red-950/50 dark:text-red-50"
+          >
+            {dbError}
+          </div>
+        ) : null}
       </div>
 
       <section className="space-y-3">

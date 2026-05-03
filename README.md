@@ -70,6 +70,12 @@ Volunteer web app for **reserving and completing** flyering on whole streets in 
 - Complete a reserved street; status should become done.
 - Coordinator: clear street, delete user, add street, CSV download.
 
+## Troubleshooting (Vercel)
+
+- **`npm warn deprecated @esbuild-kit/...` during install:** comes from dev tooling (e.g. `tsx`); it is **not** a failed deploy. Safe to ignore unless you want to chase transitive upgrades later.
+- **Site loads but shows “Database connection failed”:** Vercel env is wrong or the DB has no tables. Set **`DATABASE_URL`** to your Neon connection string (often the **pooled** URL). On your machine, point `.env.local` at the **same** URL and run `npm run db:migrate` and `npm run db:seed` once.
+- **Blank / 500 with no message:** check **Vercel → Project → Logs** (or Runtime Logs) for the real Postgres error (e.g. `relation "campaigns" does not exist` → run migrations).
+
 ## Tech
 
 Next.js (App Router), Tailwind CSS v4, Drizzle ORM, `@neondatabase/serverless`, Postgres.

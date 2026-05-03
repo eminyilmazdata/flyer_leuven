@@ -17,7 +17,14 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { rows } = await loadBoardRows();
+  const board = await loadBoardRows();
+  if (board.dbError) {
+    return NextResponse.json(
+      { error: "Database unavailable", detail: board.dbError },
+      { status: 503 },
+    );
+  }
+  const { rows } = board;
   const header = [
     "street",
     "status",
