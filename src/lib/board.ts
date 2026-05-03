@@ -21,7 +21,36 @@ export type BoardLoadResult = {
 };
 
 const DB_HINT =
-  "Check Vercel → Settings → Environment Variables → DATABASE_URL (Neon pooled URL). Then from your computer run: npm run db:migrate && npm run db:seed (with the same DATABASE_URL in .env.local).";
+  "Check Vercel → Settings → Environment Variables → DATABASE_URL. Use the exact string from Neon (Production enabled). Then on your computer put the same URL in .env.local and run: npm run db:migrate && npm run db:seed";
+
+/** Maps driver/Postgres errors to safe, actionable hints (no secrets). */
+function dbFailureHint(e: unknown): string {
+  const msg = e instanceof Error ? e.message : String(e);
+  if (/does not exist/i.test(msg) && /relation|table/i.test(msg)) {
+    return " Likely cause: tables not created yet. On your machine, with the same DATABASE_URL as Vercel in .env.local, run: npm run db:migrate && npm run db:seed";
+  }
+  if (/password authentication failed|28P01/i.test(msg)) {
+    return " Likely cause: wrong database user or password in DATABASE_URL. Reset the password in Neon, update Vercel, redeploy.";
+  }
+  if (/getaddrinfo|ENOTFOUND|EAI_AGAIN/i.test(msg)) {
+    return " Likely cause: hostname in DATABASE_URL is wrong or unreachable.";
+  }
+  if (/channel binding|channel_binding/i.test(msg)) {
+    return " Likely cause: channel binding. In Vercel, edit DATABASE_URL and remove &channel_binding=require (use Neon’s default “copy connection string”).";
+  }
+  if (/DATABASE_URL is not set/i.test(msg)) {
+    return " Likely cause: DATABASE_URL is missing for this deployment. Add it under Environment Variables for Production and redeploy.";
+  }
+  if (/self signed certificate|unable to verify|certificate/i.test(msg)) {
+    return " Likely cause: SSL. Use Neon’s URL with sslmode=require as copied from the dashboard.";
+  }
+  return "";
+}
+
+function formatDbError(prefix: string, e: unknown): string {
+  const hint = dbFailureHint(e);
+  return hint ? `${prefix}${hint} Still stuck? ${DB_HINT}` : `${prefix} ${DB_HINT}`;
+}
 
 export async function loadBoardRows(): Promise<BoardLoadResult> {
   try {
@@ -52,7 +81,7 @@ export async function loadBoardRows(): Promise<BoardLoadResult> {
     return {
       campaignName: null,
       rows: [],
-      dbError: `Could not load data from the database. ${DB_HINT}`,
+      dbError: formatDbError("Could not load data from the database.", e),
     };
   }
 }
@@ -92,7 +121,7 @@ export async function loadUserStreetRows(
     console.error("[loadUserStreetRows]", e);
     return {
       rows: [],
-      dbError: `Could not load your streets. ${DB_HINT}`,
+      dbError: formatDbError("Could not load your streets.", e),
     };
   }
 }

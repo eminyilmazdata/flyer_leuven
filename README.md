@@ -63,6 +63,7 @@ Volunteer web app for **reserving and completing** flyering on whole streets in 
 | `npm run db:generate` | Regenerate SQL from Drizzle schema |
 | `npm run db:migrate`  | Apply SQL in `drizzle/` to the DB |
 | `npm run db:seed`     | Seed default campaign + streets |
+| `npm run db:ping`     | Test `DATABASE_URL` with `select 1` |
 
 ## Manual checks
 
