@@ -10,7 +10,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:seed": "tsx scripts/seed.ts",
-    "db:ping": "tsx scripts/db-ping.ts"
+    "db:ping": "tsx scripts/db-ping.ts",
+    "streets:fetch": "tsx scripts/fetch-leuven-center-streets.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

@@ -66,6 +66,22 @@ Volunteer web app for **reserving and completing** flyering on whole streets in 
 | `npm run db:migrate`  | Apply SQL in `drizzle/` to the DB |
 | `npm run db:seed`     | Seed default campaign + streets |
 | `npm run db:ping`     | Test `DATABASE_URL` with `select 1` |
+| `npm run streets:fetch` | Download street names from OSM into `data/streets-seed.json` (needs network) |
+
+## Street list (OpenStreetMap)
+
+Street names come from **`data/streets-seed.json`**, applied when you run **`npm run db:seed`** on an **empty** database (seed skips if the campaign already exists).
+
+To **refresh the list** from [OpenStreetMap](https://www.openstreetmap.org/) via the public [Overpass API](https://wiki.openstreetmap.org/wiki/Overpass_API):
+
+```bash
+npm run streets:fetch
+```
+
+- Default bounding box covers **central Leuven + nearby** (south, west, north, east in WGS84). Tighten or move it with env **`OSM_BBOX`** (comma-separated), e.g. `OSM_BBOX=50.873,4.688,50.885,4.715 npm run streets:fetch`.
+- Write elsewhere with **`STREETS_OUT=./data/my-streets.json`** to compare before replacing `streets-seed.json`.
+- OSM is community-maintained: occasional odd labels are filtered, but you should still **spot-check** the JSON.
+- **`db:seed` does not add streets to an existing campaign**; for a live DB with data already, add missing names via the coordinator UI or run a custom SQL import.
 
 ## Manual checks
 
