@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { StreetTable } from "@/components/StreetTable";
 import { FilterTabs, type StreetFilter } from "@/components/FilterTabs";
 import { loadBoardRows } from "@/lib/board";
@@ -70,8 +71,12 @@ export default async function HomePage({
       <StreetTable rows={filtered} />
 
       <p className="text-sm text-zinc-500 dark:text-zinc-500">
-        Reserve a whole street, flyering it, then mark it done. Coordinators can
-        reset mistakes from the Coordinator area.
+        Reserve a whole street, flyering it, then mark it done. Volunteers need an
+        account from the{" "}
+        <Link href="/coordinator/login" className="underline hover:text-zinc-700 dark:hover:text-zinc-300">
+          coordinator
+        </Link>{" "}
+        before they can log in; coordinators manage streets and volunteers there.
       </p>
     </div>
   );

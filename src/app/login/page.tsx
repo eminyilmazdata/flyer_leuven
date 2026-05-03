@@ -18,7 +18,9 @@ export default async function LoginPage({
       ? "That username was not found."
       : errRaw === "auth"
         ? "Invalid username or password."
-        : errRaw;
+        : errRaw === "server"
+          ? "Something went wrong while signing you in. Try again in a moment."
+          : errRaw;
   const nextRaw = firstQueryValue(sp.next);
   const next =
     nextRaw && nextRaw.startsWith("/") && !nextRaw.startsWith("//")

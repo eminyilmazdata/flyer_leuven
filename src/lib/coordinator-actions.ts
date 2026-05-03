@@ -1,6 +1,7 @@
 "use server";
 
 import { timingSafeEqual } from "crypto";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
@@ -91,16 +92,18 @@ export async function coordinatorCreateVolunteer(formData: FormData) {
   }
 
   const username = normalizeUsername(usernameRaw);
-  const passwordHash = await hashPassword(pass);
 
   let inserted: { id: string }[];
   try {
+    const passwordHash = await hashPassword(pass);
     inserted = await db
       .insert(users)
       .values({ username, passwordHash })
       .onConflictDoNothing({ target: users.username })
       .returning({ id: users.id });
-  } catch {
+  } catch (e) {
+    if (isRedirectError(e)) throw e;
+    console.error("[coordinatorCreateVolunteer]", e);
     redirect("/coordinator?error=volunteer_unknown");
   }
 
@@ -108,8 +111,6 @@ export async function coordinatorCreateVolunteer(formData: FormData) {
     redirect("/coordinator?error=volunteer_taken");
   }
 
-  revalidatePath("/");
-  revalidatePath("/coordinator");
   redirect("/coordinator?volunteer_created=1");
 }
 
@@ -131,21 +132,25 @@ export async function coordinatorSetVolunteerPassword(formData: FormData) {
     redirect("/coordinator?error=volunteer_password_mismatch");
   }
 
-  const passwordHash = await hashPassword(pass);
-  const updated = await db
-    .update(users)
-    .set({ passwordHash })
-    .where(eq(users.id, userId))
-    .returning({ id: users.id });
+  try {
+    const passwordHash = await hashPassword(pass);
+    const updated = await db
+      .update(users)
+      .set({ passwordHash })
+      .where(eq(users.id, userId))
+      .returning({ id: users.id });
 
-  if (!updated.length) {
-    redirect("/coordinator?error=volunteer_not_found");
+    if (!updated.length) {
+      redirect("/coordinator?error=volunteer_not_found");
+    }
+
+    await db.delete(sessions).where(eq(sessions.userId, userId));
+  } catch (e) {
+    if (isRedirectError(e)) throw e;
+    console.error("[coordinatorSetVolunteerPassword]", e);
+    redirect("/coordinator?error=volunteer_unknown");
   }
 
-  await db.delete(sessions).where(eq(sessions.userId, userId));
-  revalidatePath("/");
-  revalidatePath("/me");
-  revalidatePath("/coordinator");
   redirect("/coordinator?volunteer_password_reset=1");
 }
 

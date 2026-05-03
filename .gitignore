@@ -44,3 +44,6 @@ env.local
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# OSM fetch preview (STREETS_OUT); not read by the app — only streets-seed.json is used for seeding
+data/streets-preview.json

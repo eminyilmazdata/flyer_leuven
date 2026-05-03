@@ -34,7 +34,7 @@ Volunteer web app for **reserving and completing** flyering on whole streets in 
    npm run db:seed
    ```
 
-   Seed creates the default campaign (`leuven-center`) and streets from `data/streets-seed.json`. Re-running seed does nothing if the campaign already exists.
+   Seed creates the default campaign (`leuven-center`) and streets from `data/streets-seed.json`. If that campaign **already exists**, re-running seed **adds any missing street names** from the file (case-insensitive match); it does not remove streets or change assignments.
 
    After adding migration `0001` (password hashes), **existing** users in the database have `password_hash` null until the coordinator uses **Set password** on each account (or deletes and recreates them).
 
@@ -70,7 +70,7 @@ Do these **in order** the first time you ship to production.
    npm run db:seed
    ```
 
-   `db:migrate` applies `drizzle/0000_*.sql` and `0001_*.sql`. `db:seed` creates the campaign and all streets from `data/streets-seed.json` (only if the campaign does not exist yet).
+   `db:migrate` applies `drizzle/0000_*.sql` and `0001_*.sql`. `db:seed` creates the campaign and streets from `data/streets-seed.json` on an empty DB; if the campaign already exists, it **imports new street names** from the same file only.
 
 7. **Smoke test** — Open your Vercel URL → `/` should list streets. `/api/health/db` should return `"ok": true`. `/coordinator/login` with `COORDINATOR_PASSWORD` → create a volunteer → `/login` as that user.
 8. **Custom domain** (optional) — Vercel → **Settings** → **Domains** → add DNS as instructed.
@@ -96,13 +96,13 @@ Do these **in order** the first time you ship to production.
 | `npm run build`   | Production build                 |
 | `npm run db:generate` | Regenerate SQL from Drizzle schema |
 | `npm run db:migrate`  | Apply SQL in `drizzle/` to the DB |
-| `npm run db:seed`     | Seed default campaign + streets |
+| `npm run db:seed`     | Seed campaign + streets, or sync missing streets from `streets-seed.json` if campaign exists |
 | `npm run db:ping`     | Test `DATABASE_URL` with `select 1` |
 | `npm run streets:fetch` | Download street names from OSM into `data/streets-seed.json` (needs network) |
 
 ## Street list (OpenStreetMap)
 
-Street names come from **`data/streets-seed.json`**, applied when you run **`npm run db:seed`** on an **empty** database (seed skips if the campaign already exists).
+Street names come from **`data/streets-seed.json`**. **`npm run db:seed`** creates the default campaign on an empty database, or **appends streets** that appear in the file but not yet in the DB (same campaign, case-insensitive name match).
 
 To **refresh the list** from [OpenStreetMap](https://www.openstreetmap.org/) via the public [Overpass API](https://wiki.openstreetmap.org/wiki/Overpass_API):
 
@@ -113,7 +113,7 @@ npm run streets:fetch
 - Default bounding box covers **central Leuven + nearby** (south, west, north, east in WGS84). Tighten or move it with env **`OSM_BBOX`** (comma-separated), e.g. `OSM_BBOX=50.873,4.688,50.885,4.715 npm run streets:fetch`.
 - Write elsewhere with **`STREETS_OUT=./data/my-streets.json`** to compare before replacing `streets-seed.json`.
 - OSM is community-maintained: occasional odd labels are filtered, but you should still **spot-check** the JSON.
-- **`db:seed` does not add streets to an existing campaign**; for a live DB with data already, add missing names via the coordinator UI or run a custom SQL import.
+- **`db:seed`** on an existing campaign only **adds** streets from `streets-seed.json`; it never deletes. Remove or rename mistakes via the coordinator UI.
 
 ## Manual checks
 

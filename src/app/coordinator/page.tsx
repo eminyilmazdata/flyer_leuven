@@ -1,5 +1,8 @@
 import Link from "next/link";
 import { asc } from "drizzle-orm";
+
+/** Password hashing + large dashboard can exceed default hobby timeout on cold start. */
+export const maxDuration = 60;
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { loadBoardRows } from "@/lib/board";
