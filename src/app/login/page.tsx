@@ -1,22 +1,26 @@
 import Link from "next/link";
 import { login } from "@/lib/auth-actions";
+import { decodeQueryError, firstQueryValue } from "@/lib/search-params";
 
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; next?: string }>;
+  searchParams: Promise<{
+    error?: string | string[];
+    next?: string | string[];
+  }>;
 }) {
   const sp = await searchParams;
-  const code = sp.error ?? "";
+  const errRaw = decodeQueryError(sp.error);
   const err =
-    code === "notfound"
+    errRaw === "notfound"
       ? "That username was not found. Register first."
-      : code
-        ? decodeURIComponent(code)
-        : null;
-  const next = sp.next && sp.next.startsWith("/") && !sp.next.startsWith("//")
-    ? sp.next
-    : "";
+      : errRaw;
+  const nextRaw = firstQueryValue(sp.next);
+  const next =
+    nextRaw && nextRaw.startsWith("/") && !nextRaw.startsWith("//")
+      ? nextRaw
+      : "";
 
   return (
     <div className="mx-auto max-w-md space-y-6">

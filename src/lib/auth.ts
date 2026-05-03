@@ -83,8 +83,12 @@ export async function destroyCurrentSession() {
   jar.delete(SESSION_COOKIE);
 }
 
+/**
+ * Canonical username for storage and uniqueness: NFKC (folds compatibility
+ * variants), trim ASCII/Unicode whitespace, lowercase ASCII.
+ */
 export function normalizeUsername(input: string): string {
-  return input.trim().toLowerCase();
+  return input.normalize("NFKC").trim().toLowerCase();
 }
 
 export function validateUsername(username: string): string | null {

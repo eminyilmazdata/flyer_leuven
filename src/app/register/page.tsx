@@ -1,15 +1,14 @@
 import Link from "next/link";
 import { register } from "@/lib/auth-actions";
+import { decodeQueryError } from "@/lib/search-params";
 
 export default async function RegisterPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string | string[] }>;
 }) {
   const sp = await searchParams;
-  const err = sp.error
-    ? decodeURIComponent(sp.error)
-    : null;
+  const err = decodeQueryError(sp.error);
 
   return (
     <div className="mx-auto max-w-md space-y-6">
@@ -17,7 +16,7 @@ export default async function RegisterPage({
       {err ? (
         <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/50 dark:text-red-100">
           {err === "taken"
-            ? "That username is already taken. Pick another or log in."
+            ? "That username is already in use (names are case-insensitive, e.g. Alex and alex are the same). Try another spelling or log in if you already registered."
             : err}
         </p>
       ) : null}
@@ -32,7 +31,9 @@ export default async function RegisterPage({
             required
             minLength={2}
             maxLength={64}
-            autoComplete="username"
+            autoComplete="off"
+            inputMode="text"
+            spellCheck={false}
             className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 dark:border-zinc-600 dark:bg-zinc-900"
           />
           <p className="mt-1 text-xs text-zinc-500">

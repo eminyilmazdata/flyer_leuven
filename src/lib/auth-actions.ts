@@ -18,21 +18,22 @@ export async function register(formData: FormData) {
   if (err) redirect(`/register?error=${encodeURIComponent(err)}`);
   const username = normalizeUsername(usernameRaw);
 
-  const existing = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.username, username))
-    .limit(1);
-  if (existing.length) {
-    redirect("/register?error=taken");
+  // Single atomic check: INSERT … ON CONFLICT DO NOTHING (avoids race + stale SELECT).
+  let inserted: { id: string }[];
+  try {
+    inserted = await db
+      .insert(users)
+      .values({ username })
+      .onConflictDoNothing({ target: users.username })
+      .returning({ id: users.id });
+  } catch {
+    redirect("/register?error=unknown");
   }
 
-  const inserted = await db
-    .insert(users)
-    .values({ username })
-    .returning({ id: users.id });
   const id = inserted[0]?.id;
-  if (!id) redirect("/register?error=unknown");
+  if (!id) {
+    redirect("/register?error=taken");
+  }
 
   const { raw } = await createSessionForUser(id);
   await setSessionCookie(raw);
