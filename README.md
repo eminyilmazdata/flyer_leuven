@@ -44,6 +44,38 @@ Volunteer web app for **reserving and completing** flyering on whole streets in 
    npm run dev
    ```
 
+## Go live (checklist)
+
+Do these **in order** the first time you ship to production.
+
+1. **Neon** — Create a project + database. Copy the **connection string** (pooled URL is fine). Remove `&channel_binding=require` if present.
+2. **GitHub** — Push `main` (this repo is already set up for Vercel import).
+3. **Vercel** — [New Project](https://vercel.com/new) → Import this GitHub repo. Framework: Next.js (auto). Root: repo root.
+4. **Environment variables** (Vercel → Project → **Settings** → **Environment Variables**), for **Production** (and Preview if you want):
+
+   | Key | Value |
+   |-----|--------|
+   | `DATABASE_URL` | Neon URL |
+   | `SESSION_SECRET` | Random string, 32+ characters |
+   | `COORDINATOR_PASSWORD` | Password for `/coordinator/login` |
+   | `CRON_SECRET` | Random string (cron auth) |
+
+5. **Deploy** — Trigger first deployment (or push to `main`). Wait until it succeeds.
+6. **Database schema + data** — On your **laptop**, put the **same** `DATABASE_URL` in `.env.local`, then:
+
+   ```bash
+   npm install
+   npm run db:ping
+   npm run db:migrate
+   npm run db:seed
+   ```
+
+   `db:migrate` applies `drizzle/0000_*.sql` and `0001_*.sql`. `db:seed` creates the campaign and all streets from `data/streets-seed.json` (only if the campaign does not exist yet).
+
+7. **Smoke test** — Open your Vercel URL → `/` should list streets. `/api/health/db` should return `"ok": true`. `/coordinator/login` with `COORDINATOR_PASSWORD` → create a volunteer → `/login` as that user.
+8. **Custom domain** (optional) — Vercel → **Settings** → **Domains** → add DNS as instructed.
+9. **Cron** — `CRON_SECRET` must match what Vercel sends; see **Vercel** subsection below.
+
 ## Vercel
 
 1. Connect the repo and set the same environment variables in the Vercel project.
