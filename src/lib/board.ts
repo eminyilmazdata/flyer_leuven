@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { assignments, streets, users } from "@/db/schema";
 import { getDefaultCampaign } from "./campaign";
@@ -84,7 +84,7 @@ export async function loadBoardRows(): Promise<BoardLoadResult> {
       .innerJoin(assignments, eq(assignments.streetId, streets.id))
       .leftJoin(users, eq(users.id, assignments.userId))
       .where(eq(streets.campaignId, campaign.id))
-      .orderBy(asc(streets.sortOrder), asc(streets.name));
+      .orderBy(asc(sql`lower(${streets.name})`));
 
     return { campaignName: campaign.name, rows };
   } catch (e) {
@@ -125,7 +125,7 @@ export async function loadUserStreetRows(
       .where(
         and(eq(streets.campaignId, campaign.id), eq(assignments.userId, userId)),
       )
-      .orderBy(asc(streets.sortOrder), asc(streets.name));
+      .orderBy(asc(sql`lower(${streets.name})`));
 
     return { rows };
   } catch (e) {
