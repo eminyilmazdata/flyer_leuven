@@ -1,36 +1,75 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Flyer Leuven
 
-## Getting Started
+Volunteer web app for **reserving and completing** flyering on whole streets in Leuven city center. Deploys cleanly to **Vercel** with **Postgres** (e.g. Neon).
 
-First, run the development server:
+## Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- Public board of streets with status: open, reserved, completed.
+- **Register / log in** with a username only (no password).
+- **Reserve** an open street, **release** it, or **mark done** when finished.
+- **Coordinator** area (password-protected): clear any street, delete volunteers and their assignments, add/delete streets, **CSV export**.
+- **Cron** (optional): auto-releases reservations older than `STALE_RESERVATION_HOURS` (default 48).
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. **Clone** and install dependencies:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+   ```bash
+   npm install
+   ```
 
-## Learn More
+2. **Postgres**: create a database (e.g. [Neon](https://neon.tech)) and copy the connection string.
 
-To learn more about Next.js, take a look at the following resources:
+3. **Environment**: copy `.env.example` to `.env.local` and fill values:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+   - `DATABASE_URL` — Postgres URL (Neon pooled URL works on Vercel).
+   - `SESSION_SECRET` — long random string (32+ characters).
+   - `COORDINATOR_PASSWORD` — password for `/coordinator/login`.
+   - `CRON_SECRET` — random string; Vercel Cron sends `Authorization: Bearer <CRON_SECRET>` to the release endpoint.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+4. **Migrations and seed**:
 
-## Deploy on Vercel
+   ```bash
+   npm run db:migrate
+   npm run db:seed
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+   Seed creates the default campaign (`leuven-center`) and streets from `data/streets-seed.json`. Re-running seed does nothing if the campaign already exists.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+5. **Develop**:
+
+   ```bash
+   npm run dev
+   ```
+
+## Vercel
+
+1. Connect the repo and set the same environment variables in the Vercel project.
+2. **Build**: default `npm run build` is fine. Run migrations once after first deploy (locally against production `DATABASE_URL`, or via a one-off command / CI step):
+
+   ```bash
+   DATABASE_URL="…production…" npm run db:migrate
+   DATABASE_URL="…production…" npm run db:seed
+   ```
+
+3. **Cron**: `vercel.json` schedules `GET /api/cron/release-stale` daily. Set `CRON_SECRET` in Vercel; the platform sends the bearer token automatically for secured cron invocations.
+
+## Scripts
+
+| Script            | Purpose                          |
+| ----------------- | -------------------------------- |
+| `npm run dev`     | Next.js dev server               |
+| `npm run build`   | Production build                 |
+| `npm run db:generate` | Regenerate SQL from Drizzle schema |
+| `npm run db:migrate`  | Apply SQL in `drizzle/` to the DB |
+| `npm run db:seed`     | Seed default campaign + streets |
+
+## Manual checks
+
+- Two browsers: try to reserve the same open street; one should get a conflict message.
+- Complete a reserved street; status should become done.
+- Coordinator: clear street, delete user, add street, CSV download.
+
+## Tech
+
+Next.js (App Router), Tailwind CSS v4, Drizzle ORM, `@neondatabase/serverless`, Postgres.

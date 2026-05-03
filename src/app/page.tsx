@@ -1,65 +1,70 @@
-import Image from "next/image";
+import { StreetTable } from "@/components/StreetTable";
+import { FilterTabs, type StreetFilter } from "@/components/FilterTabs";
+import { loadBoardRows } from "@/lib/board";
 
-export default function Home() {
+const ERROR_MAP: Record<string, string> = {
+  reserve_conflict:
+    "Someone else reserved that street first. Refresh the list or pick another street.",
+};
+
+function parseFilter(raw: string | undefined): StreetFilter {
+  if (raw === "open" || raw === "reserved" || raw === "completed") return raw;
+  return "all";
+}
+
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ filter?: string; error?: string }>;
+}) {
+  const sp = await searchParams;
+  const active = parseFilter(sp.filter);
+  const { campaignName, rows } = await loadBoardRows();
+  const filtered =
+    active === "all" ? rows : rows.filter((r) => r.status === active);
+  const errMsg = sp.error ? ERROR_MAP[sp.error] ?? sp.error : null;
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          City center streets
+        </h1>
+        {campaignName ? (
+          <p className="mt-1 text-zinc-600 dark:text-zinc-400">
+            Campaign: {campaignName}
           </p>
+        ) : (
+          <p className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-100">
+            No campaign found. Run{" "}
+            <code className="rounded bg-amber-100 px-1 dark:bg-amber-900">
+              npm run db:migrate
+            </code>{" "}
+            then{" "}
+            <code className="rounded bg-amber-100 px-1 dark:bg-amber-900">
+              npm run db:seed
+            </code>{" "}
+            (see README).
+          </p>
+        )}
+      </div>
+
+      {errMsg ? (
+        <div
+          role="alert"
+          className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-100"
+        >
+          {errMsg}
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      ) : null}
+
+      <FilterTabs active={active} />
+      <StreetTable rows={filtered} />
+
+      <p className="text-sm text-zinc-500 dark:text-zinc-500">
+        Reserve a whole street, flyering it, then mark it done. Coordinators can
+        reset mistakes from the Coordinator area.
+      </p>
     </div>
   );
 }

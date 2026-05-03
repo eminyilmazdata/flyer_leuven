@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1777805204850,
+      "tag": "0000_freezing_stellaris",
+      "breakpoints": true
+    }
+  ]
+}
