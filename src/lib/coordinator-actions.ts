@@ -68,19 +68,18 @@ export async function coordinatorClearStreet(streetId: string) {
 
 export async function coordinatorDeleteUser(userId: string) {
   await assertCoordinator();
-  await db.transaction(async (tx) => {
-    await tx
-      .update(assignments)
-      .set({
-        status: "open",
-        userId: null,
-        reservedAt: null,
-        completedAt: null,
-      })
-      .where(eq(assignments.userId, userId));
-    await tx.delete(sessions).where(eq(sessions.userId, userId));
-    await tx.delete(users).where(eq(users.id, userId));
-  });
+  // neon-http driver does not support db.transaction() — run ordered steps.
+  await db
+    .update(assignments)
+    .set({
+      status: "open",
+      userId: null,
+      reservedAt: null,
+      completedAt: null,
+    })
+    .where(eq(assignments.userId, userId));
+  await db.delete(sessions).where(eq(sessions.userId, userId));
+  await db.delete(users).where(eq(users.id, userId));
   revalidatePath("/");
   revalidatePath("/me");
   revalidatePath("/coordinator");
@@ -102,15 +101,14 @@ export async function coordinatorAddStreet(formData: FormData) {
     .where(eq(streets.campaignId, campaign.id));
   const nextOrder = Number(maxRow[0]?.m ?? -1) + 1;
 
-  await db.transaction(async (tx) => {
-    const inserted = await tx
-      .insert(streets)
-      .values({ campaignId: campaign.id, name, sortOrder: nextOrder })
-      .returning({ id: streets.id });
-    const id = inserted[0]?.id;
-    if (!id) return;
-    await tx.insert(assignments).values({ streetId: id, status: "open" });
-  });
+  const inserted = await db
+    .insert(streets)
+    .values({ campaignId: campaign.id, name, sortOrder: nextOrder })
+    .returning({ id: streets.id });
+  const id = inserted[0]?.id;
+  if (id) {
+    await db.insert(assignments).values({ streetId: id, status: "open" });
+  }
   revalidatePath("/");
   revalidatePath("/coordinator");
 }
